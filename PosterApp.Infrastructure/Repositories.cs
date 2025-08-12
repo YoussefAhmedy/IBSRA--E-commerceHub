@@ -1,11 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using PosterApp.Core.Interfaces;
-using PosterApp.Infrastructure.Data;
-
-using Microsoft.EntityFrameworkCore;
 using PosterApp.Core.Entities;
 using PosterApp.Core.Interfaces;
 using PosterApp.Infrastructure.Data;
+using PosterApp.Shared.Enums;
 
 namespace PosterApp.Infrastructure.Repositories;
 
@@ -70,13 +67,6 @@ public class UserRepository : GenericRepository<User>, IUserRepository
     }
 }
 
-// PosterApp.Infrastructure/Repositories/OrderRepository.cs
-using Microsoft.EntityFrameworkCore;
-using PosterApp.Core.Entities;
-using PosterApp.Core.Interfaces;
-using PosterApp.Infrastructure.Data;
-using PosterApp.Shared.Enums;
-
 public class OrderRepository : GenericRepository<Order>, IOrderRepository
 {
     public OrderRepository(AppDbContext context) : base(context) { }
@@ -133,12 +123,6 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
     }
 }
 
-// PosterApp.Infrastructure/Repositories/ProductRepository.cs
-using Microsoft.EntityFrameworkCore;
-using PosterApp.Core.Entities;
-using PosterApp.Core.Interfaces;
-using PosterApp.Infrastructure.Data;
-
 public class ProductRepository : GenericRepository<Product>, IProductRepository
 {
     public ProductRepository(AppDbContext context) : base(context) { }
@@ -155,12 +139,6 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
             .ToListAsync();
     }
 }
-
-// PosterApp.Infrastructure/Repositories/CustomPosterRepository.cs
-using Microsoft.EntityFrameworkCore;
-using PosterApp.Core.Entities;
-using PosterApp.Core.Interfaces;
-using PosterApp.Infrastructure.Data;
 
 public class CustomPosterRepository : GenericRepository<CustomPoster>, ICustomPosterRepository
 {
