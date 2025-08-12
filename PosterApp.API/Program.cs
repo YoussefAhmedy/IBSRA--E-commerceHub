@@ -3,11 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
-using PosterApp.Core.Interfaces;
-using PosterApp.Core.Services;
+using PosterApp.Infrastructure.Extensions;
 using PosterApp.Infrastructure.Data;
-using PosterApp.Infrastructure.Repositories;
-using PosterApp.Infrastructure.Mappings;
+using PosterApp.API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,18 +13,28 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
+// Add Infrastructure services
+builder.Services.AddInfrastructure(builder.Configuration);
+
 // Swagger configuration with JWT support
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Poster App API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo 
+    { 
+        Title = "Poster App API", 
+        Version = "v1",
+        Description = "E-commerce API for custom poster printing service"
+    });
+    
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme",
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer"
     });
+    
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -43,25 +51,6 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Database
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// AutoMapper
-builder.Services.AddAutoMapper(typeof(MappingProfile));
-
-// Repositories
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IProductRepository, ProductRepository>();
-builder.Services.AddScoped<ICustomPosterRepository, CustomPosterRepository>();
-builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-
-// Services
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IProductService, ProductService>();
-builder.Services.AddScoped<ICustomPosterService, CustomPosterService>();
-builder.Services.AddScoped<IOrderService, OrderService>();
-
 // JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -75,18 +64,20 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["JWT:Issuer"],
             ValidAudience = builder.Configuration["JWT:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["JWT:Key"]!))
+                Encoding.UTF8.GetBytes(builder.Configuration["JWT:Key"]!)),
+            ClockSkew = TimeSpan.Zero
         };
     });
 
 // CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins("http://localhost:3000", "https://localhost:3001") // React/Vue frontend
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
@@ -96,21 +87,36 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Poster App API V1");
+        c.RoutePrefix = string.Empty; // Serve Swagger UI at root
+    });
 }
 
+// Custom middleware
+app.UseMiddleware<ExceptionMiddleware>();
+
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
+app.UseStaticFiles(); // For serving admin.html
+
+app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-// Initialize database
+// Seed database
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    context.Database.EnsureCreated();
+    
+    // Apply migrations in development
+    if (app.Environment.IsDevelopment())
+    {
+        context.Database.EnsureCreated();
+        DataSeeder.SeedData(context);
+    }
 }
 
 app.Run();
