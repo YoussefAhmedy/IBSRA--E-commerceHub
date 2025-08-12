@@ -1,4 +1,3 @@
-PosterApp.Core/Entities/User.cs
 namespace PosterApp.Core.Entities;
 
 public class User
