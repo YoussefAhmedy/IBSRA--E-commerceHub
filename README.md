@@ -1,5 +1,4 @@
-# IBSRA-E.commerceHub :
-# Poster E-commerce API - Setup & Deployment Guide
+# IBSRA-E.commerceHub : Poster E-commerce API - Setup & Deployment Guide
 
 ## 📋 Prerequisites
 
