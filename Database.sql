@@ -1,0 +1,77 @@
+CREATE DATABASE PosterAppDB;
+GO
+
+USE PosterAppDB;
+GO
+
+-- Users Table
+CREATE TABLE Users (
+    Id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    FullName NVARCHAR(100) NOT NULL,
+    Email NVARCHAR(255) UNIQUE NOT NULL,
+    PasswordHash NVARCHAR(500) NOT NULL,
+    CreatedAt DATETIME2 DEFAULT GETUTCDATE(),
+    UpdatedAt DATETIME2 DEFAULT GETUTCDATE()
+);
+
+-- Products Table (Pre-made posters)
+CREATE TABLE Products (
+    Id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    Name NVARCHAR(200) NOT NULL,
+    Description NVARCHAR(500),
+    ImageUrl NVARCHAR(500),
+    Category NVARCHAR(100),
+    Price DECIMAL(10,2) NOT NULL,
+    Size NVARCHAR(50), -- e.g., "30cm x 40cm"
+    IsActive BIT DEFAULT 1,
+    CreatedAt DATETIME2 DEFAULT GETUTCDATE()
+);
+
+-- Custom Posters Table
+CREATE TABLE CustomPosters (
+    Id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    UserId UNIQUEIDENTIFIER FOREIGN KEY REFERENCES Users(Id),
+    ImageUrl NVARCHAR(500) NOT NULL,
+    Size NVARCHAR(50) NOT NULL,
+    FrameType NVARCHAR(50), -- Black, Red, Natural, Dark, None
+    FramePrice DECIMAL(10,2) DEFAULT 0,
+    BasePrice DECIMAL(10,2) NOT NULL,
+    TotalPrice DECIMAL(10,2) NOT NULL,
+    CreatedAt DATETIME2 DEFAULT GETUTCDATE()
+);
+
+-- Orders Table
+CREATE TABLE Orders (
+    Id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    OrderNumber NVARCHAR(50) UNIQUE NOT NULL,
+    UserId UNIQUEIDENTIFIER FOREIGN KEY REFERENCES Users(Id),
+    Status NVARCHAR(50) DEFAULT 'Pending', -- Pending, Processing, Shipped, Delivered, Cancelled
+    TotalAmount DECIMAL(10,2) NOT NULL,
+    ShippingCost DECIMAL(10,2) DEFAULT 0,
+    ShippingAddress NVARCHAR(500) NOT NULL,
+    ShippingCity NVARCHAR(100) NOT NULL,
+    ShippingZipCode NVARCHAR(20) NOT NULL,
+    Phone NVARCHAR(20),
+    DeliveryType NVARCHAR(50), -- Standard, Express
+    EstimatedDeliveryStart DATE,
+    EstimatedDeliveryEnd DATE,
+    CreatedAt DATETIME2 DEFAULT GETUTCDATE(),
+    UpdatedAt DATETIME2 DEFAULT GETUTCDATE()
+);
+
+-- Order Items Table
+CREATE TABLE OrderItems (
+    Id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    OrderId UNIQUEIDENTIFIER FOREIGN KEY REFERENCES Orders(Id),
+    ProductId UNIQUEIDENTIFIER NULL FOREIGN KEY REFERENCES Products(Id),
+    CustomPosterId UNIQUEIDENTIFIER NULL FOREIGN KEY REFERENCES CustomPosters(Id),
+    Quantity INT NOT NULL,
+    UnitPrice DECIMAL(10,2) NOT NULL,
+    TotalPrice DECIMAL(10,2) NOT NULL,
+    ItemType NVARCHAR(20) -- 'Product' or 'Custom'
+);
+
+-- Insert sample data
+INSERT INTO Products (Name, Description, ImageUrl, Category, Price, Size) VALUES
+('Abstract Geometric Art', 'Modern abstract geometric artwork perfect for contemporary spaces.', 'https://example.com/abstract1.jpg', 'Abstract', 24.99, '30cm x 40cm'),
+('Nature Landscape', 'Beautiful nature landscape poster', 'https://example.com/nature1.jpg', 'Nature', 29.99, '40cm x 50cm');
